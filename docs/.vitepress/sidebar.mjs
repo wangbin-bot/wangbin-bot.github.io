@@ -2,6 +2,10 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 function titleFrom(markdown, fallback) {
+  const frontmatter = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/)
+  const frontmatterTitle = frontmatter?.[1].match(/^title:\s*["']?(.*?)["']?\s*$/m)?.[1]?.trim()
+  if (frontmatterTitle) return frontmatterTitle
+
   const heading = markdown.match(/^#\s+(.+)\s*$/m)
   return heading?.[1]?.trim() || fallback
 }
@@ -16,10 +20,24 @@ async function scanDirectory(root, relative = '') {
   for (const entry of directories) {
     const nestedPath = path.posix.join(relative, entry.name)
     const nestedItems = await scanDirectory(root, nestedPath)
-    items.push({ text: entry.name, collapsed: false, items: nestedItems })
+    const directoryIndex = path.join(absolute, entry.name, 'index.md')
+    try {
+      const markdown = await readFile(directoryIndex, 'utf8')
+      items.push({
+        text: titleFrom(markdown, entry.name),
+        link: `/${path.basename(root)}/${nestedPath}/`,
+        collapsed: false,
+        items: nestedItems,
+      })
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      items.push({ text: entry.name, collapsed: false, items: nestedItems })
+    }
   }
 
+  const hasIndex = files.some((entry) => entry.name === 'index.md')
   for (const entry of files) {
+    if (hasIndex && (entry.name === 'index.md' || entry.name === 'README.md')) continue
     const filePath = path.posix.join(relative, entry.name)
     const markdown = await readFile(path.join(root, relative, entry.name), 'utf8')
     const slug = filePath.replace(/\.md$/, '')
