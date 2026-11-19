@@ -23,6 +23,7 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '渗透攻防武库', link: '/pentest/README' },
+      { text: '简历素材总表', link: '/resume-arsenal' },
       { text: 'CSDN 历史文章精选', link: '/articles/README' },
       { text: '技术折腾与随笔', link: '/notes/README' },
       { text: '关于我', link: 'https://github.com/wangbin-bot' }
